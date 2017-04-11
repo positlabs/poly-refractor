@@ -7,7 +7,7 @@
     "build": "browserify src/poly-refractor.js -o dist/poly-refractor.js",
     "watch": "budo src/poly-refractor.js:dist/poly-refractor.js --open --live --cors --dir ./",
     "build-globals": "browserify globals.js -o dist/globals.js",
-    "deploy": "git subtree push --prefix dist origin gh-pages"
+    "deploy": "git subtree push --prefix examples origin gh-pages"
   },
   "repository": {
     "type": "git",
