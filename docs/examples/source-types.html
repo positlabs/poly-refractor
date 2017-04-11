@@ -46,6 +46,7 @@
 		<script>
 			
 			var refractor = document.querySelector('poly-refractor')
+			window.addEventListener('resize', refractor.resize.bind(refractor))
 			
 			var video = document.querySelector('video')
 			video.addEventListener('play', function(){
@@ -64,7 +65,10 @@
 			var ctx = canvas.getContext('2d')
 			ctx.drawImage(document.querySelector('img[hidden]'), 0, 0, 200, 200)
 
-
 		</script>
+
+		<a href="https://github.com/positlabs/poly-refractor" target='_blank' style='position: absolute; right: 0; top: 0; z-index: 1000;'><img src="https://camo.githubusercontent.com/52760788cde945287fbb584134c4cbc2bc36f904/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png"></a>
+
+		<a target='_blank' style="position: absolute; bottom: 10px; text-align: center; display: inline-block; z-index: 1000; color: white; width: 100%;" href="https://github.com/positlabs/poly-refractor/blob/master/docs/examples/source-types.html" class="view-source">VIEW SOURCE</a>
 	</body>
 </html>

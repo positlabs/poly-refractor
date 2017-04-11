@@ -3,7 +3,9 @@ const componentName = 'poly-refractor'
 const sizer = require('./sizer')
 
 const lifecycle = {
-	created(){},
+	created(){
+		console.log('poly-refractor.created', this.innerHTML)
+	},
 	inserted(){
 		this.render()
 		this.draw()
@@ -94,7 +96,7 @@ const accessors = {
 
 			if(val instanceof HTMLImageElement || val instanceof HTMLVideoElement || val instanceof HTMLCanvasElement){
 				this.xtag.source = val
-				this.invalidateSize()
+				this.resize()
 				return
 			}
 			
@@ -102,7 +104,7 @@ const accessors = {
 			if(['mp4', 'webm', 'ogg'].indexOf(ext) !== -1){
 
 				var video = document.createElement('video')
-				video.addEventListener('canplaythrough', () => { this.invalidateSize() })
+				video.addEventListener('canplaythrough', () => { this.resize() })
 				video.src = this.src
 				this.xtag.source = video
 				video.setAttribute('autoplay', '')
@@ -111,13 +113,11 @@ const accessors = {
 			}else if(['png', 'jpg', 'jpeg', 'webp'].indexOf(ext) !== -1){
 
 				var img = document.createElement('img')
-				img.onload = () => { this.invalidateSize() }
+				img.onload = () => { this.resize() }
 				img.src = this.src
 				this.xtag.source = img
 			}
 
-			//TODO: handle video urls
-			//TODO: handle drawable html elements
 		}
 	},
 
@@ -177,11 +177,11 @@ const accessors = {
 	*/
 	offsetFactor: {
 		attribute: {
-			def: 300
+			def: 3
 		},
 		get(){return this.xtag.offsetFactor},
 		set(val){
-			this.xtag.offsetFactor = parseInt(val)
+			this.xtag.offsetFactor = parseFloat(val)
 			this.createCells()
 		}
 	},
@@ -225,7 +225,11 @@ const methods = {
 
 			ctx.closePath()
 			ctx.clip()
-			ctx.drawImage(this.xtag.source, cell.offset.x, cell.offset.y, this.canvas.width, this.canvas.height)
+
+			// offsets are normalized values. Need to map to pixel coordinates
+			var offsetX = cell.offset.x * this.canvas.width / this.cellsX
+			var offsetY = cell.offset.y * this.canvas.height / this.cellsY
+			ctx.drawImage(this.xtag.source, offsetX, offsetY, this.canvas.width, this.canvas.height)
 			ctx.restore()
 		})
 	},
@@ -241,14 +245,15 @@ const methods = {
 		}
 	},
 
-	invalidateSize(){
+	resize(dstWidth, dstHeight){
+		// console.log('poly-refractor.resize', dstWidth, dstHeight)
 		var srcWidth = this.xtag.source.width || this.xtag.source.videoWidth
 		var srcHeight = this.xtag.source.height || this.xtag.source.videoHeight
-		var size = sizer.contain(srcWidth, srcHeight, this.offsetWidth, this.offsetHeight)
-		console.log(size)
+		var dstWidth = this.offsetWidth
+		var dstHeight = this.offsetHeight
+		var size = sizer.contain(srcWidth, srcHeight, dstWidth, dstHeight)
 		this.canvas.width = size.width
 		this.canvas.height = size.height
-
 	},
 
 	render (){
