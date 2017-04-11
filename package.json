@@ -1,0 +1,25 @@
+{
+  "name": "poly-refractor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/poly-refractor.js",
+  "scripts": {
+    "build": "browserify src/poly-refractor.js -o dist/poly-refractor.js",
+    "watch": "budo src/poly-refractor.js:dist/poly-refractor.js --open --live --cors --dir ./",
+    "build-globals": "browserify globals.js -o dist/globals.js",
+    "deploy": "git subtree push --prefix dist origin gh-pages"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/positlabs/poly-refractor.git"
+  },
+  "author": "Josh Beckwith <josh@positlabs.com> (https://github.com/positlabs)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/positlabs/poly-refractor/issues"
+  },
+  "homepage": "https://github.com/positlabs/poly-refractor#readme",
+  "devDependencies": {
+    "x-tag": "^1.5.11"
+  }
+}
