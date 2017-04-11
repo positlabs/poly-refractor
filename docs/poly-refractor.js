@@ -4,9 +4,7 @@ const componentName = 'poly-refractor'
 const sizer = require('./sizer')
 
 const lifecycle = {
-	created(){
-		this.stats = new Stats()
-	},
+	created(){},
 	inserted(){
 		this.render()
 		this.draw()
@@ -17,63 +15,172 @@ const lifecycle = {
 }
 
 const cellGeneratorPresets = {
-	rect: () => {
+	rect: (cellsX, cellsY, offsetFactor) => {
+		// console.log('cellGeneratorPresets.rect', cellsX, cellsY, offsetFactor)
+		
+		var center = new Vector2(.5, .5)
+		var size = new Vector2(1 / cellsX, 1 / cellsY)
 
+		var cells = Array(cellsX * cellsY).fill(0).map((zero, i) => {
+			
+			var coordinates = 	new Vector2(i % cellsX, Math.floor(i / cellsX))
+			var position = 		new Vector2(size.x * coordinates.x, size.y * coordinates.y)
+			var maxOffset = 	new Vector2(
+									 -(center.x - position.x) * offsetFactor, 
+									 -(center.y - position.y) * offsetFactor
+								)
+
+			return new Cell(
+				[
+					new Vector2(position.x, position.y), 
+					new Vector2(position.x + size.x, position.y), 
+					new Vector2(position.x + size.x, position.y + size.y), 
+					new Vector2(position.x, position.y + size.y)
+				],
+				maxOffset
+			)
+		})
+		return cells
 	},
 
-	diamond: () => {
+	diamond: (cellsX, cellsY, offsetFactor) => {
 
+		var center = new Vector2(.5, .5)
+		var size = new Vector2(1 / cellsX, 1 / cellsY)
+		var halfSize = new Vector2(size.x / 2, size.y / 2)
+
+		var cells = Array((cellsX + 2) * (cellsY + 2)).fill(0).map((zero, i) => {
+
+			var coordinates = 	new Vector2(i % (cellsX+2), Math.floor(i / (cellsX+2)))
+			var position = 		new Vector2(size.x * coordinates.x, size.y * coordinates.y)
+			var maxOffset = 	new Vector2(
+									 -(center.x - position.x) * offsetFactor, 
+									 -(center.y - position.y) * offsetFactor
+								)
+
+			var xOffset = coordinates.y % 2 - 1
+			var yOffset = -1
+			position.x += xOffset * halfSize.x
+			position.y += yOffset * halfSize.y
+
+			return new Cell (
+				[
+					new Vector2(position.x, position.y + halfSize.y), // left
+					new Vector2(position.x + halfSize.x, position.y - halfSize.y), // top
+					new Vector2(position.x + size.x, position.y + halfSize.y), // right
+					new Vector2(position.x + halfSize.x, position.y + size.y + halfSize.y), // bottom
+				],
+				maxOffset
+			)
+		})
+		return cells
 	}
 }
 
 const accessors = {
+
 	/*
-		method to use for creating cells
-		function(){...}
-	*/ 
-	cellGenerator: {},
+		media to be used
+		accepts paths (.png, .jpg, etc...) 
+		or references to drawable html elements (img, canvas, video)
+	*/
 	src: {
 		attribute: {},
-		get(){return this.xtag.data.src},
+		get(){return this.xtag.src},
 		set(val){
 			if(val === undefined) return
-			this.xtag.data.src = val
+			this.xtag.src = val
+			
+			//TODO: handle video urls
+			//TODO: handle drawable html elements
+
 			var img = document.createElement('img')
 			img.onload = () => { this.invalidateSize() }
 			img.src = this.src
-			this.xtag.data.img = img
+			this.xtag.img = img
 		}
 	},
+
+	/*
+		method to use for creating cells
+		use one of the preset strings (diamond, rect)
+		or assign a custom function to handle cell generation
+		function(cellsX, cellsY, offsetFactor){
+			...
+			return cellsArray
+		}
+	*/ 
+	cellGenerator: {
+		attribute: {
+			def: 'diamond'
+			// def: 'rect'
+		},
+		get(){
+			return this.xtag.cellGenerator
+		},
+		set(val){
+			this.xtag.cellGenerator = val
+			this.createCells()
+		},
+	},
+
+	/*
+		number of horizontal cells
+	*/
 	cellsX: {
-		attribute: {},
-		get(){return this.xtag.data.cellsX},
+		attribute: {
+			def: 9
+		},
+		get(){return this.xtag.cellsX},
 		set(val){
-			this.xtag.data.cellsX = parseInt(val)
+			this.xtag.cellsX = parseInt(val)
 			this.createCells()
 		}
 	},
+
+	/*
+		number of vertical cells
+	*/
 	cellsY: {
-		attribute: {},
-		get(){return this.xtag.data.cellsY},
+		attribute: {
+			def: 9
+		},
+		get(){return this.xtag.cellsY},
 		set(val){
-			this.xtag.data.cellsY = parseInt(val)
+			this.xtag.cellsY = parseInt(val)
 			this.createCells()
 		}
 	},
-	offset: {
-		attribute: {},
-		get(){return this.xtag.data.offset},
+
+	/*
+		controls the strength of the offset effect
+	*/
+	offsetFactor: {
+		attribute: {
+			def: 300
+		},
+		get(){return this.xtag.offsetFactor},
 		set(val){
-			this.xtag.data.offset = parseInt(val)
+			this.xtag.offsetFactor = parseInt(val)
 			this.createCells()
 		}
 	},
-	duration: {
-		attribute: {},
-		get(){return this.xtag.data.duration},
-		set(val){
-			this.xtag.data.duration = parseInt(val)
-		}
+
+	/*
+		var cell = new Cell(cellPath, maxOffset)
+
+		cellPath: Array of Vector2. This is the shape that is drawn as a mask
+		maxOffset: Vector2 that will be multiplied by the offsetFactor. Changes where pixels are sourced from
+	*/
+	Cell: {
+		get(){ return Cell }
+	},
+
+	/*
+		new Vector2(x, y)
+	*/
+	Vector2: {
+		get(){ return Vector2 }
 	}
 }
 
@@ -83,7 +190,6 @@ const methods = {
 		if(this._paused) return
 		requestAnimationFrame(this.draw.bind(this))
 		if(!this.src) return // nothing to draw
-		this.stats.begin()
 		var ctx = this.ctx
 
 		// render the cells!
@@ -99,103 +205,25 @@ const methods = {
 
 			ctx.closePath()
 			ctx.clip()
-			ctx.drawImage(this.xtag.data.img, cell.offset.x, cell.offset.y, this.canvas.width, this.canvas.height)
+			ctx.drawImage(this.xtag.img, cell.offset.x, cell.offset.y, this.canvas.width, this.canvas.height)
 			ctx.restore()
 		})
-		
-		this.stats.end()
 	},
 
 	createCells(){
-		// console.log('createCells', this.cellsX, this.cellsY, (this.cellsX + 2) * (this.cellsY + 2))
-		// track path coords and current offset
-		var cellsX = parseInt(this.cellsX)
-		var cellsY = parseInt(this.cellsY)
-		this.cells = _.range((cellsX + 2) * (cellsY + 2)).map(i => {
-			
-			var x = (i % (cellsX + 2)),
-				y = Math.floor(i / (cellsX + 2)),
-				cellWidth = 1 / cellsX,
-				cellHeight = 1 / cellsY,
-				posX = cellWidth * x,
-				posY = cellHeight * y,
-				centerCellX = cellsX / 2,
-				centerCellY = cellsY / 2,
-				maxOffsetX = -(centerCellX - x) / cellsX * this.offset,
-				maxOffsetY = -(centerCellY - y) / cellsY * this.offset
+		if(this.cellsX === undefined || this.cellsY === undefined || !this.offsetFactor) return
+		console.log('createCells', this.cellsX, this.cellsY, this.offsetFactor)
 
-				// console.log(x, y, i)
-
-			// console.log(maxOffsetX, maxOffsetY)
-			var halfCellWidth = cellWidth / 2
-			var halfCellHeight = cellHeight / 2
-			var xOffset = y % 2 - 1
-			var yOffset = -1
-			posX += xOffset * halfCellWidth
-			posY += yOffset * halfCellHeight
-
-			var cell = {
-				path: [
-					// diamond path
-					new Vector2(posX, posY + halfCellHeight), // left
-					new Vector2(posX + halfCellWidth, posY - halfCellHeight), // top
-					new Vector2(posX + cellWidth, posY + halfCellHeight), // right
-					new Vector2(posX + halfCellWidth, posY + cellHeight + halfCellHeight), // bottom
-					// box path
-					// new Vector2(posX, posY), 
-					// new Vector2(posX + cellWidth, posY), 
-					// new Vector2(posX + cellWidth, posY + cellHeight), 
-					// new Vector2(posX, posY + cellHeight)
-				],
-				offset: new Vector2(0, 0),
-				maxOffset: new Vector2(maxOffsetX, maxOffsetY)
-			}
-			return cell
-		})
+		if(typeof this.cellGenerator === 'function'){
+			return this.cells = this.cellGenerator(this.cellsX, this.cellsY, this.offsetFactor)
+		}else if(typeof this.cellGenerator === 'string'){
+			return this.cells = cellGeneratorPresets[this.cellGenerator](this.cellsX, this.cellsY, this.offsetFactor)
+		}
 	},
-	
-	// show (){ return new Promise(resolve => {
-
-	// 	this.cells.forEach(cell => {
-	// 		var max = cell.maxOffset.clone()
-	// 		TweenMax.fromTo(cell.offset, this.duration, {
-	// 			x: max.x, y: max.y,
-	// 		}, {
-	// 			x: 0, y: 0,
-	// 			ease: Power3.easeInOut
-	// 		})	
-	// 	})
-
-	// 	TweenMax.to(this, this.duration, {opacity: 1})
-	// 	this.hidden	= false
-		
-	// 	setTimeout(() => {
-	// 		resolve()
-	// 	}, this.duration * 1000)
-	// })},
-	
-	// hide (){ return new Promise(resolve => {
-
-	// 	this.cells.forEach((cell, i) => {
-	// 		var max = cell.maxOffset.clone()
-	// 		TweenMax.to(cell.offset, this.duration, {
-	// 			x: max.x, y: max.y,
-	// 			ease: Power3.easeOut
-	// 		})	
-	// 	})
-		
-	// 	TweenMax.to(this, this.duration, {opacity: 0})
-
-	// 	setTimeout(() => {
-	// 		this.hidden	= true
-	// 		resolve()
-	// 	}, this.duration * 1000)
-
-	// })},
 
 	invalidateSize(){
 
-		var size = sizer.contain(this.xtag.data.img.width, this.xtag.data.img.height, this.offsetWidth, this.offsetHeight)
+		var size = sizer.contain(this.xtag.img.width, this.xtag.img.height, this.offsetWidth, this.offsetHeight)
 		this.canvas.width = size.width
 		this.canvas.height = size.height
 
@@ -203,18 +231,18 @@ const methods = {
 
 	render (){
 		this.innerHTML = ''
-		this.appendChild(this.stats.dom)
 
-		var $canvas = $('<canvas/>').appendTo(this)
-		$canvas.css({
-			display: 'inline-block',
-			position: 'absolute',
-			top: '50%', left: '50%',
-			transform: 'translate(-50%, -50%)'
-		})
-		this.canvas = $canvas[0]
+		var canvas = document.createElement('canvas')
+		this.appendChild(canvas)
+		this.canvas = canvas
+
+		canvas.style.display = 'inline-block'
+		canvas.style.position = 'absolute'
+		canvas.style.top = '50%' 
+		canvas.style.left = '50%'
+		canvas.style.transform = 'translate(-50%, -50%)'
+
 		this.ctx = this.canvas.getContext('2d')
-
 	},
 
 	reset (){
@@ -227,8 +255,10 @@ const methods = {
 }
 
 class Cell {
-	constructor(){
-		this.offset = new Vector2()
+	constructor(path, maxOffset){
+		this.path = path
+		this.maxOffset = maxOffset
+		this.offset = maxOffset.clone()
 	}
 }
 
@@ -244,20 +274,62 @@ class Vector2 {
 		return new Vector2(this.x, this.y)
 	}
 }
-const prototype = {
-	Vector2,
-	Cell,
-	cellGeneratorPresets
-}
 
-// var getDistance = function(x1, x2, y1, y2){
-// 	return Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) )
-// }
 
-module.exports = xtag.register(componentName, {
-	prototype, lifecycle, accessors, methods
+var component = xtag.register(componentName, {
+	lifecycle, accessors, methods
 })
 
+module.exports = component
+
+
+
+
+
+
+
+
+
+
+
+// show (){ return new Promise(resolve => {
+
+// 	this.cells.forEach(cell => {
+// 		var max = cell.maxOffset.clone()
+// 		TweenMax.fromTo(cell.offset, this.duration, {
+// 			x: max.x, y: max.y,
+// 		}, {
+// 			x: 0, y: 0,
+// 			ease: Power3.easeInOut
+// 		})	
+// 	})
+
+// 	TweenMax.to(this, this.duration, {opacity: 1})
+// 	this.hidden	= false
+	
+// 	setTimeout(() => {
+// 		resolve()
+// 	}, this.duration * 1000)
+// })},
+
+// hide (){ return new Promise(resolve => {
+
+// 	this.cells.forEach((cell, i) => {
+// 		var max = cell.maxOffset.clone()
+// 		TweenMax.to(cell.offset, this.duration, {
+// 			x: max.x, y: max.y,
+// 			ease: Power3.easeOut
+// 		})	
+// 	})
+	
+// 	TweenMax.to(this, this.duration, {opacity: 0})
+
+// 	setTimeout(() => {
+// 		this.hidden	= true
+// 		resolve()
+// 	}, this.duration * 1000)
+
+// })},
 
 },{"./sizer":2}],2:[function(require,module,exports){
 
@@ -291,7 +363,6 @@ const sizer = {
 	}
 }
 
-window.sizer = sizer
 module.exports = sizer
 
 },{}]},{},[1]);
