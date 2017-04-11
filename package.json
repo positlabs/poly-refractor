@@ -6,7 +6,7 @@
   "scripts": {
     "build": "browserify src/poly-refractor.js -o docs/poly-refractor.js",
     "watch": "budo src/poly-refractor.js:docs/poly-refractor.js --open --live --cors --dir ./",
-    "deploy": "git subtree push --prefix examples origin gh-pages"
+    "deploy": "npm run build && git subtree push --prefix examples origin gh-pages"
   },
   "repository": {
     "type": "git",

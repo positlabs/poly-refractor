@@ -89,14 +89,35 @@ const accessors = {
 		set(val){
 			if(val === undefined) return
 			this.xtag.src = val
+
+			if(this.xtag.source && this.xtag.source.paused === false && this.xtag.source !== val) this.xtag.source.pause()
+
+			if(val instanceof HTMLImageElement || val instanceof HTMLVideoElement || val instanceof HTMLCanvasElement){
+				this.xtag.source = val
+				this.invalidateSize()
+				return
+			}
 			
+			var ext = val.split('.').pop()
+			if(['mp4', 'webm', 'ogg'].indexOf(ext) !== -1){
+
+				var video = document.createElement('video')
+				video.addEventListener('canplaythrough', () => { this.invalidateSize() })
+				video.src = this.src
+				this.xtag.source = video
+				video.setAttribute('autoplay', '')
+				video.setAttribute('loop', '')
+
+			}else if(['png', 'jpg', 'jpeg', 'webp'].indexOf(ext) !== -1){
+
+				var img = document.createElement('img')
+				img.onload = () => { this.invalidateSize() }
+				img.src = this.src
+				this.xtag.source = img
+			}
+
 			//TODO: handle video urls
 			//TODO: handle drawable html elements
-
-			var img = document.createElement('img')
-			img.onload = () => { this.invalidateSize() }
-			img.src = this.src
-			this.xtag.img = img
 		}
 	},
 
@@ -204,14 +225,14 @@ const methods = {
 
 			ctx.closePath()
 			ctx.clip()
-			ctx.drawImage(this.xtag.img, cell.offset.x, cell.offset.y, this.canvas.width, this.canvas.height)
+			ctx.drawImage(this.xtag.source, cell.offset.x, cell.offset.y, this.canvas.width, this.canvas.height)
 			ctx.restore()
 		})
 	},
 
 	createCells(){
 		if(this.cellsX === undefined || this.cellsY === undefined || !this.offsetFactor) return
-		console.log('createCells', this.cellsX, this.cellsY, this.offsetFactor)
+		// console.log('createCells', this.cellsX, this.cellsY, this.offsetFactor)
 
 		if(typeof this.cellGenerator === 'function'){
 			return this.cells = this.cellGenerator(this.cellsX, this.cellsY, this.offsetFactor)
@@ -221,8 +242,10 @@ const methods = {
 	},
 
 	invalidateSize(){
-
-		var size = sizer.contain(this.xtag.img.width, this.xtag.img.height, this.offsetWidth, this.offsetHeight)
+		var srcWidth = this.xtag.source.width || this.xtag.source.videoWidth
+		var srcHeight = this.xtag.source.height || this.xtag.source.videoHeight
+		var size = sizer.contain(srcWidth, srcHeight, this.offsetWidth, this.offsetHeight)
+		console.log(size)
 		this.canvas.width = size.width
 		this.canvas.height = size.height
 
@@ -245,10 +268,8 @@ const methods = {
 	},
 
 	reset (){
-
 		this.cells.forEach((cell, i) => {
-			cell.offset.x = 0
-			cell.offset.y = 0
+			cell.offset.set(0, 0)
 		})
 	}
 }
@@ -266,6 +287,10 @@ class Vector2 {
 		this.x = x
 		this.y = y
 	}
+	set(x, y){
+		this.x = x
+		this.y = y
+	}
 	toString(){
 		return this.x + ',' + this.y
 	}
@@ -273,7 +298,6 @@ class Vector2 {
 		return new Vector2(this.x, this.y)
 	}
 }
-
 
 var component = xtag.register(componentName, {
 	lifecycle, accessors, methods

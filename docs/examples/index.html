@@ -7,11 +7,23 @@
 				top: 0; left: 0;
 				margin: 0; padding: 0;
 				background: black;
+				color: white;
+				font-family: sans-serif;
 			}
 			poly-refractor {
 				position: absolute;
 				top: 0; left: 0;
 				width: 100%; height: 100%;
+			}
+			.controls {
+				position: absolute;
+				z-index: 1;
+				left: 10px; top: 10px;
+			}
+			.controls select, .controls input {
+				display: block;
+				position: relative;
+				margin: 10px;
 			}
 		</style>
 	</head>
@@ -19,16 +31,43 @@
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/x-tag/1.5.11/x-tag-core.js'></script>
 		<script src='../poly-refractor.js'></script>
 		<poly-refractor
-			cells-x='9'
-			cells-y='18'
-			offset-factor='100'
-			src="https://scontent-sjc2-1.cdninstagram.com/t51.2885-15/e35/17818996_435694166780844_7798451391558582272_n.jpg"
+			cells-x='21' cells-y='31'
+			cell-generator='diamond'
+			offset-factor='200'
+			src="./assets/al.jpg"
 			></poly-refractor>
+
+		<div class='controls'>
+			<label for="cell-generator">cell-generator</label>
+			<select id='cell-generator'>
+				<option value='diamond'>diamond</option>
+				<option value='rect'>rect</option>
+			</select>
+			<label for="cells-x">cells-x</label>
+			<input id='cells-x' type='range' value='21'>
+			<label for="cells-y">cells-y</label>
+			<input id='cells-y' type='range' value='31'>
+			<label for="offset-factor">offset-factor</label>
+			<input id='offset-factor' type='range' value='200' min='0' max='3000'>
+		</div>
 
 		<script>
 			
 			var refractor = document.querySelector('poly-refractor')
-			console.log(refractor)
+
+			var keys = [
+				'cell-generator',
+				'cells-x',
+				'cells-y',
+				'offset-factor'
+			]
+			keys.forEach(function(id){
+
+				var control = document.querySelector('#' + id)
+				control.addEventListener('input', function(){
+					refractor.setAttribute(id, control.value)
+				})
+			})
 
 		</script>
 	</body>
