@@ -32,15 +32,15 @@
 		<poly-refractor
 			cells-x='9' cells-y='9'
 			cell-generator='diamond'
-			offset-factor='200'
-			src="./assets/pub.mp4"
+			offset-factor='4'
+			src="./assets/p-crawl.mp4"
 			></poly-refractor>
 		
 		<div class="sources">
 			<video src="./assets/pub.mp4" loop controls></video>
 			<img src="./assets/pop.jpg">
 			<img hidden src="./assets/al.jpg">
-			<canvas width='200' height='200'></canvas>
+			<canvas width='1080' height='1080'></canvas>
 		</div>
 
 		<script>
@@ -52,6 +52,11 @@
 			video.addEventListener('play', function(){
 				refractor.src = video
 			})
+			video.addEventListener('click', function(){
+				if(video.paused) video.play()
+				else video.pause()
+			})
+
 
 			var img = document.querySelector('img')
 			img.addEventListener('click', function(){
@@ -63,7 +68,7 @@
 				refractor.src = canvas
 			})
 			var ctx = canvas.getContext('2d')
-			ctx.drawImage(document.querySelector('img[hidden]'), 0, 0, 200, 200)
+			ctx.drawImage(document.querySelector('img[hidden]'), 0, 0, canvas.width, canvas.height)
 
 		</script>
 
