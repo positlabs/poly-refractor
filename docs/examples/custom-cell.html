@@ -32,43 +32,111 @@
 		<script src='../poly-refractor.js'></script>
 
 		<poly-refractor
-			cells-x='21' cells-y='31'
-			cell-generator='diamond'
-			offset-factor='200'
+			cells-x='9' cells-y='9'
+			offset-factor='5'
 			src='./assets/al.jpg'
 			></poly-refractor>
 
 		<div class='controls'>
-			<label for="cell-generator">cell-generator</label>
-			<select id='cell-generator'>
-				<option value='diamond'>diamond</option>
-				<option value='rect'>rect</option>
-			</select>
-			<label for="cells-x">cells-x</label>
-			<input id='cells-x' type='range' value='21'>
-			<label for='cells-y'>cells-y</label>
-			<input id='cells-y' type='range' value='31'>
+			<label for='cells'>cells</label>
+			<input id='cells' type='range' value='9' step='.01' max='30'>
 			<label for='offset-factor'>offset-factor</label>
-			<input id='offset-factor' type='range' value='200' min='0' max='3000'>
+			<input id='offset-factor' type='range' value='5' min='0' max='20' step='.01'>
 		</div>
 
 		<script>
 			
 			var refractor = document.querySelector('poly-refractor')
 			window.addEventListener('resize', refractor.resize.bind(refractor))
-			
-			var keys = [
-				'cell-generator',
-				'cells-x',
-				'cells-y',
-				'offset-factor'
-			]
-			keys.forEach(function(id){
 
-				var control = document.querySelector('#' + id)
-				control.addEventListener('input', function(){
-					refractor.setAttribute(id, control.value)
+			/*
+				
+				Custom cell layout logic!
+
+			*/
+			var V2 = refractor.Vector2
+			var Cell = refractor.Cell
+			var center = new V2(.5, .5)
+			refractor.cellGenerator = function(cellsX, cellsY, offsetFactor){
+		
+				var size = new V2(1 / cellsX, 1 / cellsY)
+
+				var cells = Array(cellsX * cellsY).fill(0).map((zero, i) => {
+					
+					var coords = 		new V2(i % cellsX, Math.floor(i / cellsX))
+					var pos = 			new V2(size.x * coords.x, size.y * coords.y)
+					var cellCenter = 	new V2(pos.x + size.x * .5, pos.y + size.y * .5)
+					var maxOffset = 	new V2(
+											 -(center.x - pos.x) * offsetFactor, 
+											 -(center.y - pos.y) * offsetFactor
+										)
+
+					var points = [
+						new V2(pos.x + 1/8 * size.x, pos.y - 1/8 * size.y),
+						new V2(pos.x + 3/8 * size.x, pos.y - 1/8 * size.y),
+						new V2(pos.x + 3/8 * size.x, pos.y + 1/8 * size.y),
+						new V2(pos.x + 9/8 * size.x, pos.y + 1/8 * size.y),
+						new V2(pos.x + 9/8 * size.x, pos.y + 3/8 * size.y),
+						new V2(pos.x + 7/8 * size.x, pos.y + 3/8 * size.y),
+						new V2(pos.x + 7/8 * size.x, pos.y + 9/8 * size.y),
+						new V2(pos.x + 5/8 * size.x, pos.y + 9/8 * size.y),
+						new V2(pos.x + 5/8 * size.x, pos.y + 7/8 * size.y),
+						new V2(pos.x - 1/8 * size.x, pos.y + 7/8 * size.y),
+						new V2(pos.x - 1/8 * size.x, pos.y + 5/8 * size.y),
+						new V2(pos.x + 1/8 * size.x, pos.y + 5/8 * size.y)
+					]
+
+					points.forEach(function(point){
+						var rotatedV2 = rotate(cellCenter, point, 35)
+						var scaledV2 = scale(cellCenter, rotatedV2, 9/8 ) // i messed up the math, so needs scaling up
+						point.set(scaledV2.x, scaledV2.y)
+					})
+
+					return new Cell(points, maxOffset)
 				})
+				return cells
+			}
+
+			//TODO: make these methods of the Vector2 class
+
+			function rotate(center, point, angle) {
+				var radians = (Math.PI / 180) * angle,
+					cos = Math.cos(radians),
+					sin = Math.sin(radians),
+					nx = (cos * (point.x - center.x)) + (sin * (point.y - center.y)) + center.x,
+					ny = (cos * (point.y - center.y)) - (sin * (point.x - center.x)) + center.y
+				return new V2(nx, ny)
+			}
+
+			function scale(center, point, scale) {
+				var dx = center.x - point.x
+				var dy = center.y - point.y
+				var angle = Math.atan2(dy, dx)
+				var length = lineDistance(center, point)
+				var radius = scale * length 
+				return new V2(Math.cos(angle) * radius + center.x, Math.sin(angle) * radius + center.y)
+			}
+
+			function lineDistance( p1, p2 ){
+				var xs = p2.x - p1.x
+				var ys = p2.y - p1.y
+				return Math.sqrt( xs * xs + ys * ys )
+			}
+
+
+			/*
+				controls
+			*/
+
+			var offset = document.querySelector('#offset-factor')
+			offset.addEventListener('input', function(){
+				refractor.setAttribute('offset-factor', offset.value)
+			})
+			
+			var cells = document.querySelector('#cells')
+			cells.addEventListener('input', function(){
+				refractor.setAttribute('cells-x', cells.value)
+				refractor.setAttribute('cells-y', cells.value)
 			})
 
 		</script>

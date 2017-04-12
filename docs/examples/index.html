@@ -37,7 +37,7 @@
 			cells-x='21' cells-y='31'
 			cell-generator='diamond'
 			offset-factor='8'
-			src="./assets/al.jpg"
+			src='./assets/al.jpg'
 			></poly-refractor>
 
 		<div class='controls'>
@@ -46,11 +46,11 @@
 				<option value='diamond'>diamond</option>
 				<option value='rect'>rect</option>
 			</select>
-			<label for="cells-x">cells-x</label>
-			<input id='cells-x' type='range' value='21'>
+			<label for='cells-x'>cells-x</label>
+			<input id='cells-x' type='range' value='21' step='.01'>
 			<label for="cells-y">cells-y</label>
-			<input id='cells-y' type='range' value='31'>
-			<label for="offset-factor">offset-factor</label>
+			<input id='cells-y' type='range' value='31' step='.01'>
+			<label for='offset-factor'>offset-factor</label>
 			<input id='offset-factor' type='range' value='8' min='0' max='100' step='.01'>
 		</div>
 
@@ -59,13 +59,13 @@
 			var refractor = document.querySelector('poly-refractor')
 			window.addEventListener('resize', refractor.resize.bind(refractor))
 
-			var keys = [
+			var attributes = [
 				'cell-generator',
 				'cells-x',
 				'cells-y',
 				'offset-factor'
 			]
-			keys.forEach(function(id){
+			attributes.forEach(function(id){
 
 				var control = document.querySelector('#' + id)
 				control.addEventListener('input', function(){

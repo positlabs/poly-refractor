@@ -1,7 +1,7 @@
 {
   "name": "poly-refractor",
   "version": "0.0.9",
-  "description": "2D canvas \"fly-eye\" image filter.",
+  "description": "2D canvas fly-eye image filter.",
   "main": "docs/poly-refractor.js",
   "scripts": {
     "build": "browserify src/poly-refractor.js -o docs/poly-refractor.js",
