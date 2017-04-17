@@ -1,0 +1,108 @@
+<html>
+	<head>
+		<style>
+			body {
+				position: absolute;
+				width: 100%; height: 100%;
+				top: 0; left: 0;
+				margin: 0; padding: 0;
+				background: black;
+				color: white;
+				font-family: sans-serif;
+			}
+			poly-refractor {
+				position: absolute;
+				top: 0; left: 0;
+				width: 100%; height: 100%;
+			}
+			.controls {
+				position: absolute;
+				z-index: 1;
+				left: 10px; top: 10px;
+			}
+			.controls button {
+				display: block;
+				position: relative;
+				margin: 10px;
+			}
+		</style>
+	</head>
+
+	<body>
+		
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/x-tag/1.5.11/x-tag-core.js'></script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.1/TweenMax.min.js'></script>
+		<script src='../poly-refractor.js'></script>
+		
+		<poly-refractor
+			cells-x='21' cells-y='31'
+			cell-generator='diamond'
+			offset-factor='8'
+			src='./assets/al.jpg'
+			></poly-refractor>
+
+		<div class='controls'>
+			<button class='in'>animate in</button>
+			<button class='out'>animate out</button>
+		</div>
+
+		<script>
+			
+			var refractor = document.querySelector('poly-refractor')
+			window.addEventListener('resize', refractor.resize.bind(refractor))
+			var center = new refractor.Vector2(.5, .5)
+			// refractor.reset()
+
+			document.querySelector('.in').addEventListener('click', function(){
+
+				var duration = 2
+
+				refractor.cells.forEach((cell, i) => {
+				
+					var max = cell.maxOffset
+					var tween = TweenMax.fromTo(cell.offset, duration, {
+						x: max.x, y: max.y,
+					},{
+						x: 0, y: 0,
+						ease: Power4.easeOut,
+						delay: .002 * i
+					})
+				})
+
+				TweenLite.to(refractor, duration, {opacity: 1})
+			})
+
+
+			document.querySelector('.out').addEventListener('click', function(){
+
+				var duration = 3
+
+				refractor.cells.forEach((cell, i) => {
+					var max = cell.maxOffset
+					TweenMax.fromTo(cell.offset, duration, {
+						x: 0, y: 0,
+					},{
+						x: max.x, y: max.y,
+						ease: Power4.easeOut,
+						delay: lineDistance(center, cell.position) * .5
+					})
+				})
+
+				TweenMax.fromTo(refractor, duration, {opacity: 1}, {opacity: 0})
+
+			})
+			
+			function lineDistance( p1, p2 ){
+				var xs = p2.x - p1.x
+				var ys = p2.y - p1.y
+				return Math.sqrt( xs * xs + ys * ys )
+			}
+
+		</script>
+
+		<a href="https://github.com/positlabs/poly-refractor" target='_blank' style='position: absolute; right: 0; top: 0; z-index: 1000;'><img src="https://camo.githubusercontent.com/52760788cde945287fbb584134c4cbc2bc36f904/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png"></a>
+
+		<a target='_blank' style="position: absolute; bottom: 10px; text-align: center; display: inline-block; z-index: 1000; color: white; width: 100%;" href="https://github.com/positlabs/poly-refractor/blob/master/docs/examples/animation.html" class="view-source">VIEW SOURCE</a>
+
+	</body>
+</html>

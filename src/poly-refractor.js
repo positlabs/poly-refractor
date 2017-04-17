@@ -3,11 +3,11 @@ const componentName = 'poly-refractor'
 const sizer = require('./sizer')
 
 const lifecycle = {
-	created(){
-		console.log('poly-refractor.created', this.innerHTML)
-	},
 	inserted(){
 		this.render()
+		if(!this.cells){
+			this.createCells()
+		}
 		this.draw()
 	},
 	removed(){
@@ -17,7 +17,6 @@ const lifecycle = {
 
 const cellGeneratorPresets = {
 	rect: (cellsX, cellsY, offsetFactor) => {
-		// console.log('cellGeneratorPresets.rect', cellsX, cellsY, offsetFactor)
 		
 		var center = new Vector2(.5, .5)
 		var size = new Vector2(1 / cellsX, 1 / cellsY)
@@ -38,7 +37,8 @@ const cellGeneratorPresets = {
 					new Vector2(position.x + size.x, position.y + size.y), 
 					new Vector2(position.x, position.y + size.y)
 				],
-				maxOffset
+				maxOffset,
+				position
 			)
 		})
 		return cells
@@ -71,7 +71,8 @@ const cellGeneratorPresets = {
 					new Vector2(position.x + size.x, position.y + halfSize.y), // right
 					new Vector2(position.x + halfSize.x, position.y + size.y + halfSize.y), // bottom
 				],
-				maxOffset
+				maxOffset,
+				position
 			)
 		})
 		return cells
@@ -132,11 +133,11 @@ const accessors = {
 	*/ 
 	cellGenerator: {
 		attribute: {
-			def: 'diamond'
+			// def: 'diamond'
 			// def: 'rect'
 		},
 		get(){
-			return this.xtag.cellGenerator
+			return this.xtag.cellGenerator || 'diamond'
 		},
 		set(val){
 			this.xtag.cellGenerator = val
@@ -149,9 +150,9 @@ const accessors = {
 	*/
 	cellsX: {
 		attribute: {
-			def: 9
+			// def: 9
 		},
-		get(){return this.xtag.cellsX},
+		get(){return this.xtag.cellsX !== undefined ? this.xtag.cellsX : 9},
 		set(val){
 			this.xtag.cellsX = parseInt(val)
 			this.createCells()
@@ -163,9 +164,9 @@ const accessors = {
 	*/
 	cellsY: {
 		attribute: {
-			def: 9
+			// def: 9
 		},
-		get(){return this.xtag.cellsY},
+		get(){return this.xtag.cellsY !== undefined ? this.xtag.cellsY : 9},
 		set(val){
 			this.xtag.cellsY = parseInt(val)
 			this.createCells()
@@ -177,9 +178,9 @@ const accessors = {
 	*/
 	offsetFactor: {
 		attribute: {
-			def: 3
+			// def: 3
 		},
-		get(){return this.xtag.offsetFactor},
+		get(){return this.xtag.offsetFactor !== undefined ? this.xtag.offsetFactor : 3},
 		set(val){
 			this.xtag.offsetFactor = parseFloat(val)
 			this.createCells()
@@ -211,7 +212,8 @@ const methods = {
 		requestAnimationFrame(this.draw.bind(this))
 		if(!this.src) return // nothing to draw
 		var ctx = this.ctx
-
+		ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+		
 		// render the cells!
 		this.cells.forEach(cell => {
 
@@ -280,7 +282,8 @@ const methods = {
 }
 
 class Cell {
-	constructor(path, maxOffset){
+	constructor(path, maxOffset, position){
+		this.position = position
 		this.path = path
 		this.maxOffset = maxOffset
 		this.offset = maxOffset.clone()
@@ -309,52 +312,3 @@ var component = xtag.register(componentName, {
 })
 
 module.exports = component
-
-
-
-
-
-
-
-
-
-
-
-// show (){ return new Promise(resolve => {
-
-// 	this.cells.forEach(cell => {
-// 		var max = cell.maxOffset.clone()
-// 		TweenMax.fromTo(cell.offset, this.duration, {
-// 			x: max.x, y: max.y,
-// 		}, {
-// 			x: 0, y: 0,
-// 			ease: Power3.easeInOut
-// 		})	
-// 	})
-
-// 	TweenMax.to(this, this.duration, {opacity: 1})
-// 	this.hidden	= false
-	
-// 	setTimeout(() => {
-// 		resolve()
-// 	}, this.duration * 1000)
-// })},
-
-// hide (){ return new Promise(resolve => {
-
-// 	this.cells.forEach((cell, i) => {
-// 		var max = cell.maxOffset.clone()
-// 		TweenMax.to(cell.offset, this.duration, {
-// 			x: max.x, y: max.y,
-// 			ease: Power3.easeOut
-// 		})	
-// 	})
-	
-// 	TweenMax.to(this, this.duration, {opacity: 0})
-
-// 	setTimeout(() => {
-// 		this.hidden	= true
-// 		resolve()
-// 	}, this.duration * 1000)
-
-// })},
